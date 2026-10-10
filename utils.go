@@ -60,11 +60,12 @@ func formHeader(cookie_config *http.Cookie) string {
 func (sh *Context) setCookie(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	sh.ExpirationTime = now.Add(30 * time.Minute).UTC()
-	// sh.lastUsed.Store(now.UnixMicro())
 	c := &http.Cookie{
 		Name:     "sessionid",
 		Value:    sh.ID,
-		HttpOnly: config.Https,
+		HttpOnly: true,
+		Secure:   config.Https,
+		SameSite: http.SameSiteLaxMode,
 		Expires:  sh.ExpirationTime,
 		Path:     "/",
 	}

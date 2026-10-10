@@ -132,17 +132,16 @@ func New(w http.ResponseWriter, r *http.Request) (*Context, error) {
 // Function to Get Session using Session ID in
 // the request, if it exists
 func Get(w http.ResponseWriter, r *http.Request) (*Context, error) {
-
 	sessionId, err := GetSessionID(r)
-	if err != nil {
-		return nil, err
+	if err != nil || sessionId == "" {
+		return nil, fmt.Errorf("session not found")
 	}
 
-	sessionStoreMutex.Lock()
+	sessionStoreMutex.RLock()
 	session, exists := instances[sessionId]
-	sessionStoreMutex.Unlock()
+	sessionStoreMutex.RUnlock()
 
-	if !exists {
+	if !exists || session == nil {
 		// check if the user chooses to use database for session storage
 		// if the session does not existst with the system then will check in the DB
 		// by this we can reduce the load on DB
@@ -171,12 +170,10 @@ func Get(w http.ResponseWriter, r *http.Request) (*Context, error) {
 		// 		return nil, false
 		// 	}
 		// }
-	} else {
-		// log.Debug("Found session %s, in the Memory", sessionID)
+		return nil, fmt.Errorf("session not found")
 	}
 
 	go func(sessionID string) {
-		// Move to front in LRU
 		lruCacheMutex.Lock()
 		if elem, ok := lruElementMap[sessionID]; ok {
 			lruOrderList.MoveToFront(elem)
